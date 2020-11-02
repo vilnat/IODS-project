@@ -9,5 +9,5 @@
 date()
 
 ```
-The text continues here.
-
+Still a bit confused, I got back from fieldwork in Central Finland on Thursday and took the rest of the week off. But excited to start the course!
+Link to repo: https://github.com/vilnat/IODS-project

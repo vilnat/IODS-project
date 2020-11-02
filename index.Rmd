@@ -1,5 +1,6 @@
 ---
 title: "IODS course project"
+author: "Vilna Tyystjärvi"
 output:
   html_document:
     theme: cosmo
