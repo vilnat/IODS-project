@@ -1,4 +1,4 @@
-# Insert chapter 2 title here
+# Week 2 - Regression and model validation
 
 *Describe the work you have done this week and summarize your learning.*
 
@@ -10,4 +10,46 @@
 date()
 ```
 
-Here we go again...
+```{r}
+```
+## Dataset
+```{r}
+d14 <- read.table("data/learning2014.csv")
+str(d14)
+dim(d14)
+```
+This dataset contains information about a survey study conducted in a intro course to social statistics in the University of Helsinki. The study focused on the relationship between learning approaches and students' achievements. The dataset contains background information of each student, such as the gender, age and how well they did in the course exam. It also contains aggregated information about the survey results in columns "deep", "stra" and "surf" which correspond to deep, strategic and surface learning. 
+
+This plot shows a summary of the variables in the dataset. The line graphs in the middle of the plot show the distribution in the data. Most of the data apart from background information is fairly normally distributed. Aggregated deep learning variable is a bit skewed towards high values. The scatter plots and numerical values surrounding the line graphs show correlations inside the data. Most strongly correlated are attitude towards statistics and how well the student did in the exam (positive correlation) as well as deep and surface learning (negative correlation). 
+```{r}
+library(ggplot2)
+library(GGally)
+
+p <- ggpairs(d14, mapping = aes(alpha = 0.5), lower = list(combo = wrap("facethist", bins = 20, colour = "cornflower blue")), diag = list(continuous = wrap("densityDiag", colour = "cornflower blue")))
+p
+```
+
+Finally, here is a summary of the variables:
+```{r}
+summary(d14)
+```
+
+## Linear model
+Here I built a linear model that explains exam success based on the variables *attitude*, *strategic learning* and *age*. I chose these variables based on backward elimination method in which you add all explanatory variables in the model and delete one by one the least significant variables until you're left with variables that are statistically significant. 
+
+The summary below shows the statistical aspects of the model. The residuals are relatively well normally distributed. Of the explanatory variables, attitude is clearly the most significant statistically. It has a strong positive influence on test results. While you could spend a while discussing whether ~0.05 is 'good enough', I chose to keep strategic learning and age in the model as they improve the r^2^ value. Higher strategic learning value in the model leads to higher test results whereas age has a slightly negative influence on them. Overall the model explains approximately 22 % of the exam results (multiple r^2^ = 0.2182) so a large part of the variation is still left unexplained. 
+```{r}
+m <- lm(points ~ attitude + stra + age, data = d14)
+summary(m)
+```
+
+Linear models make certain assumptions concerning the nature of the data and the relationships between the model and the dependent variable. Model residuals show the difference between actual observations and the model. Linear models assume that these residuals are normally distributed and that their values don't depend on the dependent variable. The top-left figure below (residuals vs. fitted) shows the spread of the residuals across the fitted values. There doesn't seem to be any clear pattern although some of the residuals are somewhat separated from the general lump. Don't really know what is happening there but these residuals also aren't dependent on the fitted values. 
+
+The top-right figure shows how normally the residuals are distributed. For the most part, the residuals are close to the central line which means that they're mostly normally distributed aside from the highest negative residuals which are shown in the bottom left of that figure. 
+
+The final figure shows the influence of each individual observation on the model results. As seen, none of the observations have an unreasonably high influence on the model, meaning that there aren't any clear outliers that could be removed to improve it. 
+
+```{r}
+par(mfrow = c(2,2))
+plot(m, which = c(1,2,5))
+```
