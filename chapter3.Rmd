@@ -1,0 +1,69 @@
+# Week 3 - Logistic regression
+
+
+```{r}
+date()
+```
+
+This dataset contains information about students in two Portuguese schools. The data includes various attributes of the students such as their family background and social activities as well as grade data from two classes, math and Portuguese. The original data is available here: https://archive.ics.uci.edu/ml/datasets/Student+Performance 
+```{r}
+data <- read.table("data/alcohol_is_bad.csv", sep = ";", header = TRUE)
+colnames(data)
+```
+
+The data also contains information about the students' alcohol consumption which gives us the opportunity to study what characteristics might correlate with it. For this, I chose four interesting variables that might or might not explain alcohol consumption. 
+
+* "higher" = binary variables, whether or not the student wants to pursuit higher education. This might correlate negatively with alcohol usage, i.e. if you want to get higher education, you probably drink less (at least for now)
+
+* "activities" = binary variable, whether or not the student takes extra-curricular activities, again probably correlating negatively with alcohol usage, at least if we're thinking of overly stereotypical teenagers
+
+* "famrel" = a variable ranging from 1 to 5, describing how good the student's relationship is with their family. Might correlate negatively with alcohol usage (i.e. bad family relationship leads to drinking)
+
+* "goout" = again, a variable ranging from 1 to 5, describing how much the student goes out with friends, possibly correlating positively with alcohol, because what else would you do with friends?
+
+
+Now, let's see how they actually compare to alcohol usage.
+```{r}
+library(ggplot2)
+library(dplyr)
+g1 <- ggplot(data = data, aes(x=higher, y = alc_use))
+g1 + geom_boxplot()
+data %>% group_by(higher, high_use) %>% summarise(count = n())
+
+```
+
+From the boxplot it would seem that lesser alcohol consumption correlates with wanting higher education. However, as there are only 18 students out of almost 300 who don't want higher education, no actual conclusions can't very well be drwan and thus my hypothesis remains unproven.
+
+
+```{r}
+g1 <- ggplot(data = data, aes(x=activities, y = alc_use))
+g1 + geom_boxplot()
+
+data %>% group_by(activities, high_use) %>% summarise(count = n())
+```
+
+Seems like there is no visible relationship between alcohol usage and extra-curricular activities. This is not that surprising and my original hypothesis was rather weak.
+
+```{r}
+data$famrel <- as.character(data$famrel) #No idea what is wrong with this, I'd imagine it should work with integers as well but I guess not
+g1 <- ggplot(data = data, aes(x=famrel, y = alc_use))
+g1 + geom_boxplot()
+
+data %>% group_by(famrel, high_use) %>% summarise(count = n())
+
+```
+
+There seems to be a small relationship between particularly good family relationships and less alcohol usage. The less clear relationship in the lower end might be caused by a smaller number of students. This is inline with my original assumptions, yey me.
+
+
+
+```{r}
+data$goout <- as.character(data$goout) #No idea what is wrong with this, I'd imagine it should work with integers as well but I guess not
+g1 <- ggplot(data = data, aes(x=goout, y = alc_use))
+g1 + geom_boxplot()
+
+```
+
+At least there is a clear positive correlation with alcohol usage and going out with friends. I managed to guess something right.
+
+And now it's midnight and I'm falling asleep. So thanks for grading this far, feel free to move on to the next person.
