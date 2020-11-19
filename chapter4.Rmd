@@ -1,0 +1,136 @@
+
+# Week 4 - Clustering and classification
+
+## 2 - data
+
+The dataset we're handling this week contains data about Boston's suburbs, their housing values and various variables related to that. Here are some examples of the variables included:
+* population-related variables, such as: student-to-teacher ratio, crime rate, lower status of the population
+* housing-related variables, such as: number of rooms, value of owner-occupied homes, proportion of owner-occupied units built prior to 1940
+* infrastructure, such as: proportion of non-retail business acres per town, distance to Boston's employment centres
+* environmental variable: nitrogen oxides concentration
+
+The dataset has 14 numerical variables of 506 suburbs of Boston, as shown below.
+```{r cars}
+#Let's read the data
+library(MASS)
+data("Boston")
+
+#And examine it a bit
+str(Boston)
+```
+
+## 3 - Graphical overview of data
+Let's examine our dataset a bit more closely. From the histograms below, we can see that the different variables are distributed rather differently. Some, such as crime rate (crim) and proportion of black people (black) are heavily skewed towards one end of the spectrum, accessibility to radial highways (rad) and property tax-rate (tax) are skewed towards both high and low values while the rest are somewhat normally or evenly distributed.
+```{r}
+library(ggplot2)
+library(GGally)
+library(Hmisc)
+hist.data.frame(Boston, nclass =10)
+```
+
+And below we see how strongly these variables correlate with each other. Strongest negative correlation can be found between correlate proportion of lower-status population (lstat) and value of owner occupied homes (medv), age and distance to employment centres (dis) as well as dis and concentration of nitrogen oxides (nox). Strongest positive correlation can be found between accessibility to highways and property-tax value. 
+```{r}
+library(tidyr)
+library(corrplot)
+cor_matrix <- round(cor(Boston), 2)
+corrplot(cor_matrix, method="circle", type="upper", tl.pos="d", tl.cex = 0.6)
+```
+
+## 4 - Data preparation
+Next we will scale the data by substracting columns from their means and dividing the result with the column's standard deviation. As can be seen below, this changes each variable's mean to zero.
+```{r}
+boston_scaled <- scale(Boston)
+boston_scaled <- as.data.frame(boston_scaled)
+summary(boston_scaled)
+```
+We'll also want the crime rate variable to be categorical which can be achieved easily by dividing it into classes based on its quantiles.
+```{r}
+bins <- quantile(boston_scaled$crim)
+labels <- c("low", "med_low", "med_high", "high")
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = labels)
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+boston_scaled <- data.frame(boston_scaled, crime)
+table(boston_scaled$crime)
+```
+
+Finally, we want to be able to use the data for testing predictions so we'll divide the data into training and testing sets.
+```{r}
+n <- nrow(boston_scaled)
+#We'll divide the data into 80 % training and 20 % testing sets.
+ind <- sample(n,  size = n * 0.8)
+train <- boston_scaled[ind,]
+test <- boston_scaled[-ind,]
+```
+
+## 5 - Linear Discriminant analysis
+Next we'll use linear discriminant analysis (LDA), a classification method, to investigate crime rate in more detail.
+```{r}
+lda.fit <- lda(crime ~ ., data = train)
+
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+classes <- as.numeric(train$crime)
+
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 2)
+
+```
+
+The figure above shows a point cloud of the observations in the training data on a plane consisting of the first two LDA-axes. The points are coloured by crime rate.
+
+## 6 - Prediction
+Now we'll test how well our method can predict crime rates based on the testing data. We'll first remove the actual crime rate data from the test data, then predict them and finally compare the model results to the actual data.
+```{r}
+#Move the correct crime rates away from the test data
+correct_classes <- test$crime
+test <- dplyr::select(test, -crime)
+
+#Predict
+lda.pred <- predict(lda.fit, newdata = test)
+
+# cross tabulate the results
+table(correct = correct_classes, predicted = lda.pred$class)
+
+```
+The model manages to predict high crime rates surprisingly well. Out of 22 high crime rate suburbs, the model gets 21 right. It works also relatively well for low and medium high crime rates (getting 20/26 and 22/28 correct respectively) but doesn't do so well with medium low crime rates of which it gets right only half of the suburbs. 
+
+## 7 - K-means
+Finally, we'll do a clustering analysis to the whole dataset using k-means. First we'll check the distances between observations. Then we'll do the analysis with a few different number of clusters to find out the optimal number.
+```{r}
+data(Boston)
+new_boston <- scale(Boston)
+new_boston <- as.data.frame(new_boston)
+dist_eu <- dist(new_boston)
+summary(dist_eu)
+
+k_max <- 10
+twcss <- sapply(1:k_max, function(k){kmeans(new_boston, k)$tot.withinss})
+
+# visualize the results
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+```
+Based on the plot above, it would look like possibly 2 clusters might be a good number as after that the line starts to decrease more gradually.
+
+Now we'll run the k-means algorithm again and see how it looks like.
+```{r}
+km <- kmeans(new_boston, centers = 2)
+#Let's divide the dataset to slightly smaller chunks so we can actually see something.
+
+km$cluster <- as.character(km$cluster)
+par(mfrow = c(2,2))
+ggpairs(new_boston, columns = 1:7, mapping = aes(alpha = 0.5, col = km$cluster))
+ggpairs(new_boston, columns = 8:14, mapping = aes(alpha = 0.5, col = km$cluster))
+
+```
+
+That's a lot of little dots. In general it would seem that the clusters can be distinguished from quite a few scatter plots and distribution graphs. In the first plot, particularly proportion of non-retail business acres and concentration of nitrogen oxides are clearly divided into the two clusters. From the second plot property tax is also divided clearly. These would seem to play an important role in the clustering analysis. On the other hand, for example number of rooms per dwelling doesn't seem to play any role in this cluster analysis. 
+
+
+
