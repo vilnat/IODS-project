@@ -1,3 +1,6 @@
+#Vilna Tyystjärvi
+#Script for data wrangling for weeks 4 and 5 (Scroll down for Week 5)
+
 #Considering the script name, is it time to discuss birds and bees?
 #First, let's read some data:
 hd <- read.csv("http://s3.amazonaws.com/assets.datacamp.com/production/course_2218/datasets/human_development.csv", stringsAsFactors = F)
@@ -31,9 +34,51 @@ gii$eduRatio <- gii$edu2F / gii$edu2M
 gii$labourRatio <- gii$labourF / gii$labourM
 
 #Let's join the datasets
-human <- inner_join(hd, gii, by = "country")
+human2 <- inner_join(hd, gii, by = "country")
 head(human)
 #Looks good enough
 
 #And save
 write.table(human, "data/human.csv")
+
+##########################################################################
+######                              #Week 5                         ######
+##########################################################################
+#Let's read the data and check what's inside
+human <- read.table('data/human.csv')
+str(human)
+dim(human)
+# The dataset consists of 19 variables and 195 observations (countries) describing the human 
+# development index, gender inequality index and variables related to calculating those. These variables 
+# are related to education, labour, life expectancy, standard of living etc.
+
+#Something funny is going on with GNI
+summary(human$gni)
+#Some idiot decided it's a good idea to separate thousands with commas. Let's fix that.
+library(stringr)
+human$gni <- str_replace(human$gni, pattern=",", replace ="") %>% as.numeric
+summary(human$gni)
+#Much better
+
+# Now let's get rid of some columns and rows with no data
+keeps <- c("country", "eduRatio", "labourRatio", "eduExp", "lifeExp_birth", "gni", "maternalMort", "adolBirth", "parliament")
+human <- human[keeps]
+human <- na.omit(human)
+
+tail(human, 10)
+#Seems like Niger on row 188 is that last country in the dataset, the rest are larger regions. Let's remove them
+last <- nrow(human) - 7
+human <- human[1:last, ]
+tail(human)
+
+#And finally let's add country names as the index of the dataset rather than a column name
+rownames(human) <- human$country
+human <- dplyr::select(human, -country)
+str(human)
+head(human)
+
+#And we'll save the new dataset
+write.table(human, "data/human.csv")
+
+testi <- read.table("data/human.csv")
+head(testi)
