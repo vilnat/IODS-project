@@ -14,6 +14,7 @@ library(ggplot2)
 library(GGally)
 library(corrplot)
 library(Hmisc)
+
 human <- read.table("data/human.csv")
 hist.data.frame(human, nclass =10)
 corr <- cor(human)
@@ -60,5 +61,50 @@ pc_lab
 Much more interesting. Now that the considerably large values of GNI don't mess up the whole analysis, there seems to be more dimensionality in the data. Education and health related variables form the first dimension with lower education, GNI and life expectancy meaning higher maternal mortality rates and adolescent birth rates. The second dimension is formed by proportion of women in labour force and parliament. In other words, variables included in the Human Development Index form the first dimension and variables included in the Gender Inequality Index the second dimension meaning that these two indices do indeed measure different societal phenomena. Interestingly it would seem that HDI describes a one-dimensional phenomena since all variables related to it are along the same dimension - either a country has educated, rich people with relatively little health problems or everything's going bad (a gross oversimplification of course). GII instead seems to have more dimensionality - women's participation in labour and politics form one dimension which doesn't necessarily correlate that much with their health. One interpretation of this could be that some countries may have managed to improve women's health (at least when it comes to reproducive aspects of it) but that doesn't automatically mean women have access to political or financial power.
 
 
+## 5 - MCA
+Finally, we'll use a different dataset to get accustomed to MCA - Multiple Correspondence Analysis, meant to be used with factor datasets. The dataset shown below contains information about tea-drinking habits, a somewhat more cozy subject than human development. 
+```{r}
+library(FactoMineR)
+library(dplyr)
+library(tidyr)
+#Let's download and examine the dataset
+data(tea)
+str(tea)
+dim(tea)
+
+time_columns <- c("breakfast", "tea.time", "evening", "lunch", "dinner", "always")
+
+# select the 'keep_columns' to create a new dataset
+tea_time <- select(tea, one_of(time_columns))
+gather(tea_time) %>% ggplot(aes(value)) + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) + facet_wrap("key", scales = "free") 
+
+where_col <- c("home", "work", "tearoom" ,"friends", "resto", "pub")
+tea_place <- select(tea, one_of(where_col))
+gather(tea_place) %>% ggplot(aes(value)) + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) + facet_wrap("key", scales = "free") 
+
+how_col <- c("How", "sugar", "how", "price", "where", "frequency")
+tea_how <- select(tea, one_of(how_col))
+gather(tea_how) %>% ggplot(aes(value)) + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) + facet_wrap("key", scales = "free") 
+
+people_col <- c("sex" ,"SPC" ,"Sport", "age_Q")
+tea_people <- select(tea, one_of(people_col))
+gather(tea_people) %>% ggplot(aes(value)) + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) + facet_wrap("key", scales = "free") 
+
+why_col <- c("escape.exoticism", "spirituality", "healthy", "diuretic", "friendliness", "iron.absorption", "feminine", "sophisticated", "slimming", "exciting", "relaxing" ,"effect.on.health")
+tea_why <- select(tea, one_of(why_col))
+gather(tea_why) %>% ggplot(aes(value)) + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) + facet_wrap("key", scales = "free") 
+
+
+```
+
+Oh boy, that's a lot of data. Let's focus on how people drink tea, that seems like fun.
+
+```{r}
+mca <- MCA(tea_how, graph = FALSE)
+summary(mca)
+plot(mca, invisible=c("ind"), habillage = "quali")
+```
+NOTE: For some reason
+It seems there is at least some dimensionality in the data. Unpackaged, fancy tea people vs. cheap bag-tea-people vs. somewhere in the middle seem to form specific groups. 
 
 
