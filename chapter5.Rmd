@@ -1,0 +1,64 @@
+
+# Week 5 - Dimensionality reduction techniques
+
+## 1 - data
+
+Our dataset today contains country-level data concerning variables related to human development and gender equality.
+The variables include:
+* education: eduRatio (proportion of women vs. men with secondary education) and eduExp (expected years of education)
+* participation in society: labourRatio (proportion of women vs. men in labour force) and parliament (proportion of women in parliament)
+* health: lifeExp_birth (life expectancy at birth), maternalMort (maternal mortality rate) and adolBirth (adolescent birth rate)
+* wealth: gni (Gross National Income)
+```{r}
+library(ggplot2)
+library(GGally)
+library(corrplot)
+library(Hmisc)
+human <- read.table("data/human.csv")
+hist.data.frame(human, nclass =10)
+corr <- cor(human)
+corrplot(corr, method="circle", type="upper", tl.pos="d", tl.cex = 0.6)
+summary(human)
+```
+Most variables in the dataset are skewed toward one end or the other meaning that in most countries of the world for example maternal mortality is rare but then in a small number of countries it is alarmingly high. Ratios describing the proportion of women in different aspects of society are more evenly distributed although still with rather long tails. This means that for example labour ratio is somewhat normally distributed but with a long tail towards less women in the workforce. 
+
+Many of these variables also correlate strongly with each other, particularly health and education variables. Parliament and labour correlate little with any of the other variables.
+
+## 2 - PCA
+This is a lot of data to handle so let's see if we can make that a bit easier with principal component analysis (PCA). 
+```{r pca, fig.cap="PCA with an unscaled dataset. All variables seem to belong to one dimension with GNI correlating negatively with the rest."}
+#Calculate PCA
+pca_human <- prcomp(human)
+#Create summary and check variance of each PC
+s <- summary(pca_human)
+pca_pr <- 100 * round(1*s$importance[2, ], digits = 5)
+#plot results
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+# draw a biplot
+biplot(pca_human, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+pc_lab
+```
+It would seem that our correlation plot was correct. A lot of the variables correlate strongly with each other which also means that there isn't that much more complex dimensionality in the data. Therefore the first PC is able to capture very nearly 100% of the variation in the data. 
+
+
+## 3 and 4 - PCA with a scaled dataset and personal interpretations
+Let's see if the results get any more interesting with a scaled dataset.
+```{r pca_scaled, fig.cap = "PCA with a scaled dataset describing human development. The first dimension consists of education and health which correlate negatively with each other. The second dimension shows women's participation in society."}
+#Scaling
+human_std <- scale(human)
+#Calculate PCA
+pca_human <- prcomp(human_std)
+#Create summary and check variance of each PC
+s <- summary(pca_human)
+pca_pr <- 100 * round(1*s$importance [2, ], digits = 5)
+#plot results
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+# draw a biplot
+biplot(pca_human, cex = c(0.6, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+pc_lab
+```
+Much more interesting. Now that the considerably large values of GNI don't mess up the whole analysis, there seems to be more dimensionality in the data. Education and health related variables form the first dimension with lower education, GNI and life expectancy meaning higher maternal mortality rates and adolescent birth rates. The second dimension is formed by proportion of women in labour force and parliament. In other words, variables included in the Human Development Index form the first dimension and variables included in the Gender Inequality Index the second dimension meaning that these two indices do indeed measure different societal phenomena. Interestingly it would seem that HDI describes a one-dimensional phenomena since all variables related to it are along the same dimension - either a country has educated, rich people with relatively little health problems or everything's going bad (a gross oversimplification of course). GII instead seems to have more dimensionality - women's participation in labour and politics form one dimension which doesn't necessarily correlate that much with their health. One interpretation of this could be that some countries may have managed to improve women's health (at least when it comes to reproducive aspects of it) but that doesn't automatically mean women have access to political or financial power.
+
+
+
+
